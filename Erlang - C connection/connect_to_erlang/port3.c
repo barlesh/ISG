@@ -12,65 +12,25 @@
 
 typedef unsigned char byte;
 
-int foo(int arg);
-int bar(int arg);
 int read_cmd(byte *buf);
 int write_cmd(byte *buf, int len);
 int read_exact(byte *buf, int len);
 int write_exact(byte *buf, int len);
 
-//typedef unsigned char byte;
-
-//flip the byte (0->1, 1->0)
-int foo(int arg){
-	byte buf[10];
-	int i;
-	for(i=arg; i>0; i--) {
-			buf[0] = i;
-    	write_cmd(buf, 1);
-    	sleep(2);
-	}
-	
-	return 255;
-
-}
-
-//reverse byte (0b0101 -> 0b1010)
-int bar(int arg){
-	arg = (arg & 0xF0) >> 4 | (arg & 0x0F) << 4;
-	arg = (arg & 0xCC) >> 2 | (arg & 0x33) << 2;
-	arg = (arg & 0xAA) >> 1 | (arg & 0x55) << 1;
-	   return arg;
-
-}
-
-
-
-
 
 int main() {
-  int fn, arg, res;
+  int fn, arg, i=0;
   byte buf[100];
+	sleep(1);
 
-  printf("start listening to erlang port\n ");
-  while (read_cmd(buf) > 0) {
-    printf("in while\n");
-    fn = buf[0];
-    arg = buf[1];
-
-    if (fn == 1) {
-      res = foo(arg);
-    } else if (fn == 2) {
-      res = bar(arg);
-    } else if (fn == 3) {
-	res = 7;
-    }
-
-    buf[0] = res;
-    write_cmd(buf, 1);
-  }
+	while(1) {
+		buf[0]=i;
+		sleep(3);
+		write_cmd(buf,1);
+		i++;  
+	}//while
   	  return 1;
-}
+}//main
 
 
 

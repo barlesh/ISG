@@ -23,7 +23,15 @@ int write_exact(byte *buf, int len);
 
 //flip the byte (0->1, 1->0)
 int foo(int arg){
-	return arg ^ 0xFF;
+	byte buf[10];
+	int i;
+	for(i=arg; i>0; i--) {
+			buf[0] = i;
+    	write_cmd(buf, 1);
+    	sleep(2);
+	}
+	
+	rtaurn 255;
 
 }
 
@@ -46,15 +54,14 @@ int main() {
 
   printf("start listening to erlang port\n ");
   while (read_cmd(buf) > 0) {
+    printf("in while\n");
     fn = buf[0];
     arg = buf[1];
 
     if (fn == 1) {
       res = foo(arg);
-	printf("function1 chosen\n");
     } else if (fn == 2) {
       res = bar(arg);
-	printf("function2 chosen\n");
     } else if (fn == 3) {
 	res = 7;
     }
