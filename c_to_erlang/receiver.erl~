@@ -1,4 +1,4 @@
--module(complex4).
+-module(rceiver).
 -export([start/0, stop/0]).
 -export([sendMsg/1]).
 
@@ -9,9 +9,10 @@
 -define(ERROR, -1).
 
 start() ->
-    ExtPrg = "../connect_to_erlang/port4",
+    ExtPrg = "/home/barlesh/ISG/c_to_erlang/c_receiver",
     spawn(fun() -> init_receiver() end),
-    spawn(fun() -> init_porter(ExtPrg) end).
+    PID = self(),
+    spawn(fun() -> init_porter(ExtPrg, PID) end).
      
 stop() ->
     complex ! stop,
@@ -50,19 +51,19 @@ receive_loop()->
     end.
 
 %%initialize the process that actiaaly sends & receive data to/from C program
-init_porter(ExtPrg) ->
+init_porter(ExtPrg, Receiver) ->
     register(complex, self()),
     process_flag(trap_exit, true),
     Port = open_port({spawn, ExtPrg}, [{packet, 2}]),
-    loop(Port).
+    Msg_Buff = [],
+    loop(Port, Receiver, Msg_Buff).
     
 %%main loop of port procs. sends/receive data to/from C progrm. by receiving data, sends it to receiving pocess for further analyze 
-loop(Port) ->
+loop(Port, Receiver, Msg_Buff) ->
     receive
-	  {call, Msg} ->
-	    Port ! {self(), {command, Msg}}, loop(Port);
 		{Port, {data, Data}} ->
-		    receiver ! {complex, decode(Data)}, loop(Port);
+				Msg_Buff_new = decode(Data, Msg_Buff, Receiver);
+				loop(Port, Receiver, Msg_Buff_new)
 	stop ->
 	    Port ! {self(), close},
 	    receive
@@ -77,4 +78,7 @@ loop(Port) ->
 
 encode({Type, X}) -> [1, X].
 
-decode([Int]) -> Int.
+%case last byte of sent buffer, sent the whole buffer to receiver, and return a new empty buffer
+decode([Type, Byte], Buff, Receiver) when Type =:= 255 ->  Receiver ! Buff ++ [Byte], [];
+%else, add new byte to buffer and returne new buffer
+decode([Type, Byte], Buff, Receiver) Buff ++ [Date].

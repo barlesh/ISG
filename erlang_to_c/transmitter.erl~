@@ -1,4 +1,4 @@
--module(complex4).
+-module(transmitter).
 -export([start/0, stop/0]).
 -export([sendMsg/1]).
 
@@ -9,7 +9,7 @@
 -define(ERROR, -1).
 
 start() ->
-    ExtPrg = "../connect_to_erlang/port4",
+    ExtPrg = "/home/barlesh/ISG/Erlang - C connection/erlang_to_c/c_transmitter",
     spawn(fun() -> init_receiver() end),
     spawn(fun() -> init_porter(ExtPrg) end).
      

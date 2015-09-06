@@ -21,7 +21,7 @@ int write_exact(byte *buf, int len);
 
 //typedef unsigned char byte;
 
-//flip the byte (0->1, 1->0)
+
 int foo(int arg){
 	byte buf[10];
 	int i;
@@ -51,10 +51,7 @@ int bar(int arg){
 int main() {
   int fn, arg, res;
   byte buf[100];
-
-  printf("start listening to erlang port\n ");
   while (read_cmd(buf) > 0) {
-    printf("in while\n");
     fn = buf[0];
     arg = buf[1];
 
@@ -66,8 +63,9 @@ int main() {
 	res = 7;
     }
 
-    buf[0] = res;
-    write_cmd(buf, 1);
+		buf[0] = 3;
+    buf[1] = res;
+    write_cmd(buf, 2);
   }
   	  return 1;
 }

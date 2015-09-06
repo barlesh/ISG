@@ -16,11 +16,11 @@ lesh(Z) ->
     call_port({lesh,Z}).
 
 call_port(Msg) ->
-    complex ! {call, self(), Msg},
-    receive
-	{complex, Result} ->
-	    Result
-    end.
+    complex ! {call, self(), Msg}.%,
+    %receive
+	%{complex, Result} ->
+	 %   Result
+    %end.
 
 init(ExtPrg) ->
     register(complex, self()),
@@ -32,10 +32,7 @@ loop(Port) ->
     receive
 	{call, Caller, Msg} ->
 	    Port ! {self(), {command, encode(Msg)}},
-	    receive
-		{Port, {data, Data}} ->
-		    Caller ! {complex, decode(Data)}
-	    end,
+	  	receive1(Caller),
 	    loop(Port);
 	stop ->
 	    Port ! {self(), close},
@@ -48,6 +45,14 @@ loop(Port) ->
 	    io:format("c process killed and notifies to erlang port~n"),
 	    exit(port_terminated)
     end.
+
+receive1(Caller)->
+	  receive
+		{Port, {data, Data}} ->
+		    Caller ! {complex, Data},
+		    io:format("~p",[Data]), receive1(Caller)
+		 after 1000 -> io:format("time out at receive1~n")
+	   end.
 
 encode({foo, X}) -> [1, X];
 encode({bar, Y}) -> [2, Y];
