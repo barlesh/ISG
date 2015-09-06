@@ -56,19 +56,17 @@ int sendBufferToErlang(char * buff, int len){
 /**TODO
 **/
 int main() {
-  int flag, b, index=0, len=0,i=1;
-  byte* buff = "massage number X";
-  printf("starting\n");
-  sleep(1);
-  printf("starting~n");
+  int flag, b, index=0, len=0;
+  byte i=1;
+  byte buff[17] = {'m','a','s','s','a','g','e',' ','n','u','m','b','e','r',' ','X','\0'};
+  //printf("starting\n");
+  //printf("%s\n", buff);
 	//srand(time(NULL));
 	int r = 3;// rand() % 10;
 	while(i>0){
 		sleep(r);
-		buff[15] = (unsigned char)i;
-		printf("before printing string i is:%d", i);
-		printf("%s", buff);
-		//sendBufferToErlang(buff, 17);
+		buff[15] = i + '0';
+		sendBufferToErlang(buff, 17);
 		i++;	
 		//r = rand() % 10;
 	}//while1

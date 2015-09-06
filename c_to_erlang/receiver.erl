@@ -13,8 +13,7 @@ start() ->
     spawn(fun() -> init_porter(ExtPrg, PID) end).
      
 stop() ->
-    complex ! stop,
-    receiver!stop.
+    complex ! stop.%, receiver!stop.
 
 %%initialize the process that actiaaly sends & receive data to/from C program
 init_porter(ExtPrg, Receiver) ->
@@ -28,7 +27,7 @@ init_porter(ExtPrg, Receiver) ->
 loop(Port, Receiver, Msg_Buff) ->
     receive
 		{Port, {data, Data}} ->
-				io:format("at porter loop, got data: ~p~n", [Data]),
+				%io:format("at porter loop, got data: ~p~n", [Data]),
 				Msg_Buff_new = decode(Data, Msg_Buff, Receiver),
 				loop(Port, Receiver, Msg_Buff_new);
 	stop ->
@@ -45,6 +44,6 @@ loop(Port, Receiver, Msg_Buff) ->
     
 
 %case last byte of sent buffer, sent the whole buffer to receiver, and return a new empty buffer
-decode([Type, Byte], Buff, Receiver) when Type =:= 255 ->  Receiver ! (Buff ++ [Byte]), [];
+decode([Type, Byte], Buff, Receiver) when Type =:= 255 ->  L = Buff++[Byte], io:format("at decode, finished list:~p~n", [L]), Receiver ! (L), [];
 %else, add new byte to buffer and returne new buffer
 decode([Type, Byte], Buff, Receiver) -> Buff ++ [Byte].
