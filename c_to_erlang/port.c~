@@ -59,6 +59,8 @@ int main() {
   int flag, b, index=0, len=0,i=1;
   byte* buff = "massage number X";
   printf("starting\n");
+  sleep(1);
+  printf("starting~n");
 	//srand(time(NULL));
 	int r = 3;// rand() % 10;
 	while(i>0){
