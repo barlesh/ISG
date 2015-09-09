@@ -1,0 +1,1 @@
+scp *.erl *.c *.h make_them root@132.73.192.31:/home/ISG/uart

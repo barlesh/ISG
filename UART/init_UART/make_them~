@@ -1,0 +1,6 @@
+gcc port_receive.c -o receiver -lmraa
+echo "compiled receiver"
+gcc port_trans.c -o transmitter -lmraa
+echo "compiled ttransmitter"
+gcc port.c -o init_UART -lmraa
+echo "compiled init_UART"
