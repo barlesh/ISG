@@ -4,3 +4,7 @@ gcc port_trans.c -o c_transmitter -lmraa
 echo "compiled ttransmitter"
 gcc port.c -o init_UART -lmraa
 echo "compiled init_UART"
+
+gcc port2.c -o init_UART2 -lmraa
+echo "compiled init_UART2"
+

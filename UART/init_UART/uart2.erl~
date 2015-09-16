@@ -1,4 +1,4 @@
--module(uart).
+-module(uart2).
 -export([start/0, stop/0]).
 -export([send/2]).
 
@@ -10,25 +10,29 @@
 %1) receiver - a process whice will get th UART incoming transmition and will send it to caller's inbox
 %2) transmitter - will sent outcoming transmition, using uart:send/2 
 start() ->
-		PID = self(),
-    ExtPrg = "/home/ISG/uart/init_UART",
+		spawn(fun()->loop() end).
+    
+    
+    
+loop()->
+	PID = self(),
+    ExtPrg = "/home/ISG/uart/init_UART2",
     process_flag(trap_exit, true),
     Port = open_port({spawn, ExtPrg}, [{packet, 2}]),
-    %receive			%%wait for c uart init program to send ack about initiation
-    	%	{Port, closed} ->
-		   % 		io:format("initiated as expected~n");
-		    %{'EXIT', Port, Reason} when Reason =/= normal ->
-	    		%	io:format("error while initiating 
-%uart.Reason is:~p~n",[Reason]), exit(-1);
-		 %{'EXIT', Port, Reason} -> io:format("initiated~n")
-	  %end,
-    REC_PID = spawn(fun() -> receiver:start(PID) end),	%%registered itself as 'receiver'
-    TRAN_PID = spawn(fun() -> transmitter:start() end), %%registered itself as 'transmitter'
+    REC_PID = spawn(fun() -> receiver2:start(PID, Port) end),	%%registered itself as 'receiver'
+    TRAN_PID = spawn(fun() -> transmitter2:start(PID, Port) end), %%registered itself as 'transmitter'
     REC_REF = monitor(process, REC_PID), TRAN_REF = monitor(process, TRAN_PID),
     PID_MON = spawn(fun()-> monitor_processes(REC_REF, TRAN_REF, PID) end),
-    register(monitor_process, PID_MON).
-    
-    
+    register(monitor_process, PID_MON),
+		receive			%%wait for c uart init program to send ack about initiation
+    		{Port, closed} ->
+		    		io:format("initiated as expected~n");
+		    {'EXIT', Port, Reason} when Reason =/= normal ->
+	    			io:format("error while initiating uart.Reason is:~p~n",[Reason]), exit(-1);
+		 {'EXIT', Port, Reason} -> io:format("initiated~n");
+		 Else -> io:format("at uart2: got somthing else: ~p~n",[Else])
+	  end.
+
 %this process monitor the uart's transmitting & receiving services.
 %in case thay crash, it get a massage and try to run them again
 monitor_processes(REC_REF, TRAN_REF, CALLER_PID) ->
@@ -47,14 +51,14 @@ monitor_processes(REC_REF, TRAN_REF, CALLER_PID) ->
 
 stop() ->
 		monitor_process ! stop,
-    transmitter ! stop,
+    transmitter2 ! stop,
     receiver ! stop.
 
 send(Channel, Payload) ->
 		Msg = "a" ++ "b" ++ Payload,		%%TODO - change "a" to Channel and "b" to 0
-		transmitter ! {call, self(), Msg},
-		io:format("at uart:send Msg sent is:~p~n", [Msg]),
-		receive 
-			ok -> ok;
-			error -> error
-		end.
+		transmitter2 ! {call, self(), Msg},
+		io:format("at uart:send Msg sent is:~p~n", [Msg]).%,
+		%receive 
+			%ok -> ok;
+			%error -> error
+		%end.

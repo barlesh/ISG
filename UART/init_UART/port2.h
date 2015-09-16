@@ -15,24 +15,23 @@ typedef unsigned char byte;
 #define MEMORY_ERROR	-11
 #define UART_ERROR	-12
 
-static mraa_uart_context uart;
+#define START_BYTE	0
+#define END_BYTE		255
+#define REG_BYTE		1
 
-void set_uart();
-mraa_uart_context* get_ptr_uart();
-void init_uart();
+#define PACKET_SIZE	66
+
+mraa_uart_context uart;
+FILE* src;
+
+int inoming_modem();
+int incoming_erlang();
+int get_modem_frame(unsigned char* buffer);
+int get_erlang_frame(unsigned char* uart_buf);
+void sendToErlang(unsigned char *buffer, int len);
+void sendToModem(unsigned char* buffer, int len);
+int init_modem();
 
 void init_file(FILE* src);
 void writeToFile2(FILE* src ,char* str, int len);
 void writeToFile(FILE* src ,char* str);
-
-//void set_uart(mraa_uart_context new_uart);
-
-mraa_uart_context get_uart(){
-	return uart;
-}
-
-void set_uart(){
-	uart = mraa_uart_init(0);
-} 
-
-

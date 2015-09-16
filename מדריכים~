@@ -10,10 +10,4 @@ http://www.hypexr.org/linux_scp_help.php
 wget wget http://erlang.org/download/otp_src_18.0.tar.gz
 חלץ את הקבצים
 tar -xzf otp_src_18.0.tar.gz
-הרץ את הפקודות הבאות אחת אחרי השניה
-הכנס לתיקייה שחילצת
-cd otp_src_R12B-5
-./configure
-make
-sudo make install
 
