@@ -23,11 +23,11 @@ typedef unsigned char byte;
 mraa_uart_context uart;
 FILE* src;
 
-int is_inoming_modem();
+int is_incoming_modem();
 int is_incoming_erlang();
 int get_modem_frame(unsigned char* uart_buffer);
 int get_erlang_frame(unsigned char* uart_buf);
-void sendToErlang(unsigned char *buffer, int len);
+int send_to_erlang(unsigned char* uart_buffer, int len);
 void sendToModem(unsigned char* buffer, int len);
 int init_modem();
 

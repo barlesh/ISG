@@ -7,15 +7,28 @@ int incoming_modem(){
 
 }
 
-int incoming_erlang(){
-	//if (feof(stdin)) return 0;
-	//else return 1;
-	return 1;
+int incoming_erlang(unsigned char* buffer){
+	//return read_cmd(buffer,2);
+	return 0;
+	
 
 }
 
 int get_modem_frame(unsigned char* buffer){
-	return mraa_uart_read(uart, buffer, 66); 	
+	unsigned char* temp_buffer = buffer;
+	int x=0;
+	int y=0;
+	x = mraa_uart_read(uart, temp_buffer, 66);
+	writeToFile(src, "got first data from uart:\n");
+	writeToFile2(src, temp_buffer, x);
+	y=y+x;
+	while(mraa_uart_data_available(uart,0)){
+		writeToFile(src, "more data available\n");
+		temp_buffer=temp_buffer+y;
+		x = mraa_uart_read(uart, temp_buffer, 66);
+		y=y+x;
+	}
+	return y;
 
 }
 
@@ -23,16 +36,13 @@ int get_erlang_frame(unsigned char* uart_buf){
   int type, b, index=0, len=0;
   byte ans[10], rec_buf[10];
 	int flag = 1;
-	writeToFile(src, "start getting frame from erlang\n"); 
 	while(flag){
   		while (read_cmd(rec_buf) > 0) {
-  		writeToFile(src, "got 2 bytes\n");
   				type = rec_buf[0];
 					b = rec_buf[1];					
   				switch(type) {
   						case START_BYTE:
   									if( memset(uart_buf, 0, sizeof(uart_buf)) == NULL) {exit(MEMORY_ERROR);}
-  									writeToFile(src, "got first BYTE\n");
   									if(index!=0 || len !=0) { return 0; break;} 
   									uart_buf[index]=b;
   									index++;	len++;
@@ -40,7 +50,6 @@ int get_erlang_frame(unsigned char* uart_buf){
   					
   						case REG_BYTE:
   									if(index == 0 || len == 0) { return 0; break;}
-  									writeToFile(src, "got some BYTE\n");
   									uart_buf[index]=b;
   									index++;	len++;
   							break;
@@ -60,9 +69,18 @@ int get_erlang_frame(unsigned char* uart_buf){
 }
 
 void sendToErlang(unsigned char *buffer, int len){
-		int i=0;
-		for(;i<len;i++){
-			write_cmd(buffer,1);
+		int i=0;	char temp[50];
+		unsigned char* temp_buff = buffer;
+		writeToFile(src, "at send to erlang got:\n");
+		writeToFile2(src, temp_buff, len);
+		sprintf(temp, "len of data from uart is: %d \n\0", len);
+		writeToFile(src, temp);
+		memset(temp,0, sizeof(temp));
+		for(i;i<len;i++){
+			temp_buff=temp_buff+i;
+			sprintf(temp, "at send to erlang loop current char is:\t%c\n\0" , *temp_buff);
+			writeToFile(src,temp );
+			write_cmd(temp_buff,1);
 		}
 
 }
@@ -72,14 +90,10 @@ void sendToModem(unsigned char* buffer, int len){
 	char temp[5];
 	char msg[100];
 	int ans=0;
-	
-	writeToFile(src, "at sendToModem::printing  ptr_UART:\n");
-	writeToFile2(src, (char*)&uart, 5);
-	
-	writeToFile(src, "\ntry to send by UART\n");
-	
+	writeToFile(src, "\ntry to send by UART:\n");
+	writeToFile2(src, buffer,len);
 	ans = mraa_uart_write( uart , buffer, len);
-	sprintf(msg, "try to write to uart %d [byte].\twrote %d [byte]\n", len, ans);
+	sprintf(msg, "try to write to uart %d [byte].\twrote %d [byte]\n\0", len, ans);
 	writeToFile(src, msg);
 }
 
@@ -97,25 +111,30 @@ int init_modem(){
 
 
 int main() {
-	int len;
+	int len=0;
+	int x=0;
 	unsigned char buffer[100];
 	init_file(src);
 	init_modem();
 
+
 	while(1){
 			if(incoming_modem()) {			//if msg is being sent from modem via uart
-				writeToFile(src, "data available from uart\n"); 			
+				usleep(10);
+				writeToFile(src, "data available from uart\n"); 	
+				usleep(5);		
 				len = get_modem_frame(buffer);		//get the msg from modem
+				usleep(10);
 				sendToErlang(buffer, len);				//send the frame to erlang app
 				memset(buffer,0,sizeof(buffer)); len = 0;
 			}//if(incoming_uart)
 			
-			if(incoming_erlang()){
+			if( (x = incoming_erlang(buffer)) > 0){
 				writeToFile(src, "got data from erlang\n");
-				len = get_erlang_frame(buffer);
+				len = get_erlang_frame(buffer+x);
 				sendToModem(buffer, len+1);
 				memset(buffer,0,sizeof(buffer)); len =0;
-			
+				writeToFile(src, "sent data to modem\n");
 			}
 	}//while(1)
 
@@ -202,7 +221,7 @@ void writeToFile2(FILE* src ,char* str, int len){
 
 void init_file(FILE* src){
 	if ( (src = fopen("/home/ISG/uart/port2.txt", "w+")  ) < 0) {exit(FILE_ERROR);}
-	if( (fputs("starting c_transmitter log:\n", src) ) <0 ) {exit(FILE_ERROR);}
+	if( (fputs("starting  log:\n", src) ) <0 ) {exit(FILE_ERROR);}
 	fclose(src);
 }
 
