@@ -2,48 +2,103 @@
 
 int main() {
 	int x=0, len=0;
-	unsigned char uart_buffer[100], erlang_buffer[100];
+	char msg[100];
+	unsigned char uart_buffer[MODEM_PACKET_SIZE], erlang_buffer[MODEM_PACKET_SIZE*2];
 	init_file(src);
+	writeToFile2(src, "starting log\n", 13 );
 	init_modem();
+	//flush_stdin();
+	
 	
 	while(1){
-		if(is_incoming_erlang()){
-			
-		
-		
-		}//if(incoming_erlang)
-	
+		//writeToFile2(src, "in while(1)\n", 12 );
+			len = get_erlang_frame(erlang_buffer);
+			if(len>0) {
+					writeToFile2(src, "got erl data:\n", 14);
+					writeToFile2(src, erlang_buffer, len);
+					writeToFile2(src, "\n", 1);
+					sendToModem(erlang_buffer, len+1);
+					memset(erlang_buffer,0,MODEM_PACKET_SIZE*2);
+					len = 0;
+			}
+		else
 		if(is_incoming_modem() > 0 ){
-			writeToFile(src, "Data from UART available. trying to get data\n");
+			//writeToFile2(src, "UART data available\n", 20 );
+			//usleep(10); // let data stream through uart
 			len = get_modem_frame(uart_buffer);
-			writeToFile(src, "got data:\n");
+			writeToFile2(src, "data:\n", 6);
 			writeToFile2(src, uart_buffer, len);
-			send_to_erlang(uart_buffer, len);
+			usleep(10);
+			x = send_to_erlang(uart_buffer, len);
+			memset(uart_buffer,0,MODEM_PACKET_SIZE);
+			writeToFile2(src, "reset uart_buffer\n", 18);
 			
 			
 		}//if(incoming from moden)
 	
 	}//while(1)
-	
+	mraa_uart_stop(uart);
 }
 
+close_c_port_program(OS_PID)->
+		os:cmd("kill " ++ OS_PID),
+		io:format("closed c program for real~n").
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////		Erlang related functions		///////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int is_incoming_erlang(){
-	return 0;
+	char buff[2];
+	if(read(0, buff, 1) > 0) { fseek(0,0,SEEK_SET);}
+	else {return 0;} 
+		
 }
 
 int send_to_erlang(unsigned char* uart_buffer, int len){
-	int i;
-	for(i=0;i<len;i++){
-		write_cmd(uart_buffer+i,1);
+		//int x;
+	//for(i=0;i<len;i++){
+		//if( (x=write_cmd(uart_buffer,len))<1 ) exit(-111);
+		//else return x;
+		writeToFile2(src, "sent it to erl\n", 15);
+		return write(1, uart_buffer, len);
 	}
-	
-	return len;
 
+int get_erlang_frame(unsigned char* erlang_buffer){
+  int type, b, index=0, len=0;
+  byte ans[10], rec_buf[10];
+  		while (read_cmd(rec_buf) > 0) {
+  				writeToFile2(src, "*" ,1);
+  				type = rec_buf[0];
+					b = rec_buf[1];
+					if(type==EOF || b == EOF) { exit(-1); }					
+  				switch(type) {
+  						case START_BYTE:
+  									if( memset(erlang_buffer, 0, MODEM_PACKET_SIZE*2) == NULL) {exit(MEMORY_ERROR);}
+  									if(index!=0 || len !=0) { return 0; break;} 
+  									erlang_buffer[index]=b;
+  									index++;	len++;
+  							break;
+  					
+  						case REG_BYTE:
+  									if(index == 0 || len == 0) { return 0; break;}
+  									erlang_buffer[index]=b;
+  									index++;	len++;
+  							break;
+  							
+  						case END_BYTE:
+  									writeToFile(src, "got last BYTE\n");
+  									if(index == 0 || len == 0) { return 0; break;}  
+  									erlang_buffer[index]=b;	index++; 
+  									return len;							
+  							break;
+  						case ASK_FOR_INCOMING_BYTE:
+  									return 0;
+  									break;
+  						default : return 0; break;
+  				}//switch
+  		}//while(read_cmd>0)  
+	return 0;
 }
 
 
@@ -65,10 +120,22 @@ int init_modem(){
 
 int is_incoming_modem(){
 	return mraa_uart_data_available(uart,0);
+	//return 0;
 }
 
 int get_modem_frame(unsigned char* uart_buffer){
-	return mraa_uart_read(uart, uart_buffer, 20);
+	return mraa_uart_read(uart, uart_buffer, MODEM_PACKET_SIZE);
+}
+
+
+void sendToModem(unsigned char* buffer, int len){
+	char temp[5];
+	char msg[50];
+	int ans=0;
+	writeToFile2(src, buffer,len);
+	ans = mraa_uart_write( uart , buffer, len);
+	sprintf(msg, "try to write to uart %d [byte].\twrote %d [byte]\n", len, ans);
+	writeToFile2(src, msg,46);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -88,7 +155,7 @@ void writeToFile(FILE* src ,char* str){
 void writeToFile2(FILE* src ,char* str, int len){
 	int i=0;
 	if ( (src = fopen("/home/ISG/uart/port3.txt", "a")  ) < 0) {exit(FILE_ERROR);}
-	for(;i<len;i++){
+	for(i;i<len;i++){
 		if(fputc(str[i], src) == EOF) { exit(-11);}
 	}
 	fclose(src);
@@ -96,7 +163,6 @@ void writeToFile2(FILE* src ,char* str, int len){
 
 void init_file(FILE* src){
 	if ( (src = fopen("/home/ISG/uart/port3.txt", "w+")  ) < 0) {exit(FILE_ERROR);}
-	if( (fputs("starting  log:\n", src) ) <0 ) {exit(FILE_ERROR);}
 	fclose(src);
 }
 

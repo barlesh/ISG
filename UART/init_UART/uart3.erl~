@@ -83,7 +83,9 @@ loop(Port, User_Pid,OS_PID)->
 	
 		
 close_c_port_program(OS_PID)->
-		os:cmd("kill "++integer_to_list(OS_PID)),
+		CMD = "kill "++integer_to_list(OS_PID),
+		io:format(CMD),
+		os:cmd(CMD),
 		io:format("closed c program for real~n").
 	
 	

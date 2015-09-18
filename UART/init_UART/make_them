@@ -1,3 +1,3 @@
-gcc port3.c -o init_UART3 -lmraa
-echo "compiled init_UART3"
+gcc port4.c -o init_UART4 -lmraa
+echo "compiled init_UART4"
 

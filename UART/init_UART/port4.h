@@ -15,25 +15,18 @@ typedef unsigned char byte;
 #define MEMORY_ERROR	-11
 #define UART_ERROR	-12
 
-#define START_BYTE	0
-#define END_BYTE		255
-#define REG_BYTE		1
-#define ASK_FOR_INCOMING_BYTE 254
-
-#define PACKET_SIZE	66
 
 mraa_uart_context uart;
 FILE* src;
 
-int is_incoming_modem();
-int is_incoming_erlang();
-int get_modem_frame(unsigned char* uart_buffer);
-int get_erlang_frame(unsigned char* erlang_buffer);
-int send_to_erlang(unsigned char* uart_buffer, int len);
-void sendToModem(unsigned char* buffer, int len);
-int init_modem();
 
-void flush_stdin();
+int is_incoming_modem();
+
+int get_modem_frame(unsigned char* uart_buffer);
+
+int send_to_erlang(unsigned char* uart_buffer, int len);
+
+int init_modem();
 
 void init_file(FILE* src);
 void writeToFile2(FILE* src ,char* str, int len);

@@ -1,4 +1,1 @@
-scp *.erl root@132.73.192.31:/home/ISG/uart
-scp *.c root@132.73.192.31:/home/ISG/uart
-scp *.h root@132.73.192.31:/home/ISG/uart
-scp make_them root@132.73.192.31:/home/ISG/uart
+scp uart3.erl port3.c port3.h make_them root@192.168.1.22:/home/ISG/uart
