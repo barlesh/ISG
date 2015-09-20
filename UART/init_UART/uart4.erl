@@ -1,6 +1,13 @@
 -module(uart4).
 -export([start/0, stop/0]).
--export([check/0]).
+-export([check/0, send/2]).
+
+-define(OK, 1).
+-define(ERROR, -1).
+-define(START_BYTE, 0).
+-define(END_BYTE, 255).
+-define(REG_BYTE, 1).
+-define(ASK_FOR_INCOMING,254).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%		API			%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -13,6 +20,11 @@ start() ->
 stop() -> io:format("stooping uart connection~n"), erl_port!stop.
 
 check()-> erl_port!check.
+
+send(Channel, Payload) ->
+		Msg = [Channel] ++ [0] ++ lists:seq(48,48+63),		%%TODO - change "a" to Channel and "b" to 0
+		erl_port!{call, self(), Msg},
+		io:format("uart4:send. Msg sent is:~p~n", [Msg]).
 
 init_uart_port(User_Pid) ->
 	  PID = self(),
@@ -31,8 +43,12 @@ loop(Port, User_Pid, OS_PID)->
 	%sendByte(Port, 0, ?ASK_FOR_INCOMING),
 	receive
 	  	{_,{data, Data}} -> 
-	  			io:format("got data:~p~n",[Data]), loop(Port, User_Pid, OS_PID);%, 
-	  			%User_Pid!Data, loop(Port, User_Pid);
+	  			io:format("got data:~p~n",[Data]),
+	  			User_Pid!Data, loop(Port, User_Pid, OS_PID) ;
+	  			
+	  	{call, From, Msg} ->
+	  			sendMsg(Port, Msg), loop(Port, User_Pid,OS_PID);
+	  			
 	  			
 	  	{Port, closed} ->
 		   		io:format("C prog closed normaly(no reason)~n"),
@@ -65,4 +81,20 @@ loop(Port, User_Pid, OS_PID)->
 close_c_port_program(OS_PID)->
 		os:cmd("kill "++integer_to_list(OS_PID)),
 		io:format("closed c program for real~n").
+		
+		
+%%this function is part of the module API. it sent the contant of MSG list (of bytes) to C program
+sendMsg(Port, MSG) ->
+	[H|T] = MSG,
+	sendByte(Port, H, ?START_BYTE),
+	sendMSG2(Port, T).
+sendMSG2(Port, [H|T]) when T =:= [] -> 
+	sendByte(Port, H, ?END_BYTE);
+sendMSG2(Port, [H|T]) -> 
+	sendByte(Port, H, ?REG_BYTE),
+	sendMSG2(Port, T).
+	
+sendByte(Port, Byte, Type) -> 
+	%io:format("sending Type:~p , Byte: ~p .~n", [Type, [Byte]]), 
+	Port ! {self(), {command, [Type,Byte]}}.  
 	

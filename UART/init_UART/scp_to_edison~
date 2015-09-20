@@ -1,1 +1,1 @@
-scp uart3.erl port3.c port3.h make_them root@192.168.1.22:/home/ISG/uart
+scp uart4.erl port4.c port4.h make_them root@192.168.1.22:/home/ISG/uart
