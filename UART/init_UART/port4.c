@@ -7,14 +7,17 @@
 void main(){
 		char modem_buffer[100];
 		char erlang_buffer[MODEM_PACKET_SIZE];
-		
+		unsigned long start=0, end=0;
+		char msg[40];
 		int m_len=0, e_len=0;
 		
-		init_modem();
 		init_file(src);
+		init_modem();
 		set_nonblock_flag(0,1);
-		writeToFile(src, "init\n");
+		
 		while(1){
+		
+			/*check for incoming data from modem. if available, send it via stdout to erlang app*/
 			if( is_incoming_modem() > 0){
 				writeToFile(src, "\ndata from modem\n");
 				m_len = get_modem_frame(modem_buffer);
@@ -22,10 +25,10 @@ void main(){
 					writeToFile(src, "\ngot the data:\n");
 					writeToFile2(src, modem_buffer, m_len);
 					send_to_erlang(modem_buffer, m_len);
-				
 					}//if(m_len>0)
-			
 			}//if(modem)
+			
+			/*check for incoming data from erlang. if available, send it via UART to modem*/
 			e_len = get_erlang_frame(erlang_buffer);
 			if(e_len>0) {
 					writeToFile2(src, "\ngot erl data:\n", 14);
@@ -34,22 +37,18 @@ void main(){
 					sendToModem(erlang_buffer, e_len);
 					memset(erlang_buffer,0,MODEM_PACKET_SIZE);
 				}//if(e_len)
+				
 			e_len = 0;
 			m_len = 0;
-			
 		}//while(1)
 		
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////		Erlang related functions		///////////////////////////////////////////////
+////////////////////////////////////////		Erlang related functions		//////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int send_to_erlang(unsigned char* uart_buffer, int len){
-		//int x;
-	//for(i=0;i<len;i++){
-		//if( (x=write_cmd(uart_buffer,len))<1 ) exit(-111);
-		//else return x;
 		writeToFile2(src, "sent it to erl\n", 15);
 		return write_cmd(uart_buffer,len);
 	}
@@ -64,12 +63,12 @@ int get_erlang_frame(unsigned char* erlang_buffer){
 					//if(type==EOF || b == EOF) { exit(-1); }					
   				switch(type) {
   						case START_BYTE:
-  									writeToFile(src, "\ngot start BYTE:\n");
+  									//writeToFile(src, "\ngot start BYTE:\n");
   									if( memset(erlang_buffer, 0, MODEM_PACKET_SIZE) == NULL) {exit(MEMORY_ERROR);}
   									//if(index!=0 || len !=0) { return 0; break;} 
   									erlang_buffer[index]=b;
   									index++;	len++;
-  									writeToFile2(src, erlang_buffer, len);
+  									//writeToFile2(src, erlang_buffer, len);
   							break;
   					
   						case REG_BYTE:
@@ -79,10 +78,10 @@ int get_erlang_frame(unsigned char* erlang_buffer){
   							break;
   							
   						case END_BYTE:
-  									writeToFile(src, "\ngot last BYTE\n");
+  									//writeToFile(src, "\ngot last BYTE\n");
   									//if(index == 0 || len == 0) { return 0; break;}  
   									erlang_buffer[index]=b;	index++; len++; 
-  									writeToFile2(src, erlang_buffer ,len);
+  									//writeToFile2(src, erlang_buffer ,len);
   									return len;							
   							break;
 
@@ -94,44 +93,18 @@ int get_erlang_frame(unsigned char* erlang_buffer){
   		flag =0;
   
   }//while(flag)
-  		/*while (read_cmd(rec_buf) > 0) {
-  		//while( read(0, rec_buf, MODEM_PACKET_SIZE) > 0 ){
-  				writeToFile2(src, "4" ,1);
-  				type = rec_buf[0];
-					b = rec_buf[1];
-					if(type==EOF || b == EOF) { exit(-1); }					
-  				switch(type) {
-  						case START_BYTE:
-  									if( memset(erlang_buffer, 0, MODEM_PACKET_SIZE*2) == NULL) {exit(MEMORY_ERROR);}
-  									if(index!=0 || len !=0) { return 0; break;} 
-  									erlang_buffer[index]=b;
-  									index++;	len++;
-  							break;
-  					
-  						case REG_BYTE:
-  									if(index == 0 || len == 0) { return 0; break;}
-  									erlang_buffer[index]=b;
-  									index++;	len++;
-  							break;
-  							
-  						case END_BYTE:
-  									writeToFile(src, "got last BYTE\n");
-  									if(index == 0 || len == 0) { return 0; break;}  
-  									erlang_buffer[index]=b;	index++; 
-  									return len;							
-  							break;
-
-  						default : return 0; break;
-  				}//switch
-  		}//while(read_cmd>0)*/
+  		
 	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////	Modem related functions		///////////////////////////////////////////////////
+////////////////////////////////////////	Modem related functions		//////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int init_modem(){
-	uart = mraa_uart_init(0);
+	 if( (uart = mraa_uart_init(0)) == NULL   ){
+	   		writeToFile(src, "error INITIATING UART\n");
+  			exit(UART_ERROR);
+	 }
 	 if ( mraa_uart_set_baudrate(uart, UART_BOUD_RATE)!=MRAA_SUCCESS) {
   		writeToFile(src, "error seting baudrate\n");
   		exit(UART_ERROR);
@@ -139,14 +112,21 @@ int init_modem(){
   if ( mraa_uart_set_mode(uart, 8,MRAA_UART_PARITY_NONE , 1)!=MRAA_SUCCESS) {
   writeToFile(src, "error seting mode\n");
 	}
+	writeToFile(src, "init modem\n");	
 }
 
 
 int is_incoming_modem(){
 	char msg[40];
-	int x = mraa_uart_data_available(uart,0);
+	int x=0;
+	if ( (x = mraa_uart_data_available(uart,0) ) < 0   ) {
+	  		writeToFile(src, "error reading data from uart\n");
+  			exit(UART_ERROR);
+	}	
+	if(x==0) {
+		writeToFile(src, "incoming available but 0 bytes read\n");
+	}
 	return x;
-	//return 0;
 }
 
 
@@ -159,22 +139,24 @@ void sendToModem(unsigned char* buffer, int len){
 	char temp[5];
 	char msg[50];
 	int ans=0;
+	buffer[len]='\n';
+	writeToFile(src, "send via uart\n");
 	writeToFile2(src, buffer,len);
-	ans = mraa_uart_write( uart , buffer, len);
+	ans = mraa_uart_write( uart , buffer, len+1);
 	sprintf(msg, "\ntry to write to uart %d [byte].\twrote %d [byte]\n", len, ans);
-	writeToFile2(src, msg,46);
+	writeToFile2(src, msg,48);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////	File Handlers		/////////////////////////////////////////////////////////////
+////////////////////////////////////////	File Handlers		///////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**this function write to file (log) the last buffer sent.
 **Parameter: FILE* src - a pointer for a file descriptor to handle file. int type - first, last or middle byte of info,
 ** unsigned char byte - the byte to write to file
 **/
 void writeToFile(FILE* src ,char* str){
-	if ( (src = fopen("/home/ISG/uart/port4.txt", "a")  ) < 0) {exit(FILE_ERROR);}
+	if ( (src = fopen("/ISG/uart/port4.txt", "a")  ) < 0) {exit(FILE_ERROR);}
 	if( (fputs(str, src) ) <0 ) {exit(-11);}
 	fclose(src);
 }
@@ -182,7 +164,7 @@ void writeToFile(FILE* src ,char* str){
 
 void writeToFile2(FILE* src ,char* str, int len){
 	int i=0;
-	if ( (src = fopen("/home/ISG/uart/port4.txt", "a")  ) < 0) {exit(FILE_ERROR);}
+	if ( (src = fopen("/ISG/uart/port4.txt", "a")  ) < 0) {exit(FILE_ERROR);}
 	for(i;i<len;i++){
 		if(fputc(str[i], src) == EOF) { exit(-11);}
 	}
@@ -190,7 +172,8 @@ void writeToFile2(FILE* src ,char* str, int len){
 }
 
 void init_file(FILE* src){
-	if ( (src = fopen("/home/ISG/uart/port4.txt", "w+")  ) < 0) {exit(FILE_ERROR);}
+	if ( (src = fopen("/ISG/uart/port4.txt", "w+")  ) < 0) {exit(FILE_ERROR);}
+	writeToFile(src, "init log file\n");
 	fclose(src);
 }
 
@@ -261,8 +244,7 @@ int write_exact(byte *buf, int len)
    or clear the flag if value is 0.
    Return 0 on success, or -1 on error with errno set. */
 
-int
-set_nonblock_flag(int desc, int value)
+int	set_nonblock_flag(int desc, int value)
 {
   int oldflags = fcntl (desc, F_GETFL, 0);
   /* If reading the flags failed, return error indication now. */
@@ -270,10 +252,20 @@ set_nonblock_flag(int desc, int value)
     return -1;
   /* Set just the flag we want to set. */
   if (value != 0)
-    oldflags |= O_NONBLOCK;
+    oldflags |= O_NONBLOCK;                                                       
   else
     oldflags &= ~O_NONBLOCK;
   /* Store modified flag word in the descriptor. */
   return fcntl (desc, F_SETFL, oldflags);
 }
+
+//return time (usec)
+/*unsigned long get_process_time() {
+    struct rusage usage;
+    if( 0 == getrusage(RUSAGE_SELF, &usage) ) {
+        return (double)(usage.ru_utime.tv_sec + usage.ru_stime.tv_sec) * 1000000 +
+               (double)(usage.ru_utime.tv_usec + usage.ru_stime.tv_usec) ;
+    }
+    return 0;
+}*/
 

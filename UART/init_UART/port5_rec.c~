@@ -1,0 +1,130 @@
+#include "port5_rec.h"
+
+
+
+
+
+void main(){
+	unsigned char buffer[100];
+	unsigned char temp_buffer[100];
+	char msg[100];
+	int m_len;
+	unsigned long error_counter=0;
+	init_file(src);
+	init_modem();
+	printf("starting receiver\n");
+	while(1){
+	//printf("!");
+		m_len = 0;
+		if( (m_len = get_modem_frame(buffer)) > 0){
+			if(m_len < 3 ) {
+				//printf("m_len size is:%d, data is ", m_len);
+				showMsg(buffer, m_len);
+				error_counter++;
+			}//if(m_len<3)
+			if(m_len>3){
+				//printf("m_len is:%d, msg is:", m_len);
+				showMsg(buffer, m_len);
+				printf("error till now:%d\n", error_counter);
+				//printf("\n");
+			}//if(m_len>3)
+		
+		
+		}//if(get_frame>0)
+		if(m_len<0) {
+			
+			printf("m_len is:%d, bad!!", m_len);
+		}
+	}//while(1)
+
+}//main
+
+
+void showMsg(char *buffer, unsigned short len){
+	int i=0;
+	for(i;i<len; i++)
+		printf("%d_", buffer[i]);
+	printf("\n");
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////	Modem related functions		//////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+int init_modem(){
+	 if( (uart = mraa_uart_init(0)) == NULL   ){
+	   		writeToFile(src, "error INITIATING UART\n");
+  			exit(UART_ERROR);
+	 }
+	 if ( mraa_uart_set_baudrate(uart, UART_BOUD_RATE)!=MRAA_SUCCESS) {
+  		writeToFile(src, "error seting baudrate\n");
+  		exit(UART_ERROR);
+  		}		//set uart boud rate [bps]
+  if ( mraa_uart_set_mode(uart, 8,MRAA_UART_PARITY_NONE , 1)!=MRAA_SUCCESS) {
+  writeToFile(src, "error seting mode\n");
+	}
+	mraa_uart_set_flowcontrol(uart, 0, 0);
+	writeToFile(src, "init modem\n");	
+}
+
+
+int is_incoming_modem(){
+	char msg[40];
+	int x=0;
+	if ( (x = mraa_uart_data_available(uart,0) ) < 0   ) {
+	  		writeToFile(src, "error reading data from uart\n");
+  			exit(UART_ERROR);
+	}	
+	/*else if(x>0)
+		printf("at is_incoming_modem X (m_len outside the function) is:%d\n", x);*/
+	return x;
+}
+
+
+int get_modem_frame(unsigned char* uart_buffer){
+	return mraa_uart_read(uart, uart_buffer, 200);
+}
+
+void sendToModem(unsigned char* buffer, int len){
+	//char temp[5];
+	//char msg[50];
+	int ans=0;
+	//writeToFile(src, "sending via uart. msg:\n");
+	//writeToFile2(src, buffer,len);
+	ans = mraa_uart_write( uart , buffer, len);
+	//sprintf(msg, "\ntry to write to uart %d [byte].\twrote %d [byte]\n", len, ans);
+	//writeToFile(src, msg);
+	printf("try to write to uart %d [byte].\twrote %d [byte]\n", len, ans);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////	File Handlers		///////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**this function write to file (log) the last buffer sent.
+**Parameter: FILE* src - a pointer for a file descriptor to handle file. int type - first, last or middle byte of info,
+** unsigned char byte - the byte to write to file
+**/
+void writeToFile(FILE* src ,char* str){
+	if ( (src = fopen("/ISG/uart/port4.txt", "a")  ) < 0) {exit(FILE_ERROR);}
+	if( (fputs(str, src) ) <0 ) {exit(-11);}
+	fclose(src);
+}
+
+
+void writeToFile2(FILE* src ,char* str, int len){
+	int i=0;
+	if ( (src = fopen("/ISG/uart/port4.txt", "a")  ) < 0) {exit(FILE_ERROR);}
+	for(i;i<len;i++){
+		if(fputc(str[i], src) == EOF) { exit(-11);}
+	}
+	fclose(src);
+}
+
+void init_file(FILE* src){
+	if ( (src = fopen("/ISG/uart/port4.txt", "w+")  ) < 0) {exit(FILE_ERROR);}
+	writeToFile(src, "init log file\n");
+	fclose(src);
+}
+
+

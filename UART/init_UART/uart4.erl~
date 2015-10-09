@@ -1,6 +1,6 @@
 -module(uart4).
 -export([start/0, stop/0]).
--export([check/0, send/2]).
+-export([check/0, send/2, loop_send/1]).
 
 -define(OK, 1).
 -define(ERROR, -1).
@@ -22,14 +22,22 @@ stop() -> io:format("stooping uart connection~n"), erl_port!stop.
 check()-> erl_port!check.
 
 send(Channel, Payload) ->
-		Msg = [Channel] ++ [0] ++ lists:seq(48,48+63),		%%TODO - change "a" to Channel and "b" to 0
+		Msg = ['a'] ++ ['b'] ++ Payload, %lists:seq(48,48+63),		%%TODO - change "a" to Channel and "b" to 0
 		erl_port!{call, self(), Msg},
 		io:format("uart4:send. Msg sent is:~p~n", [Msg]).
+		
+loop_send(N) when N =:= 100 -> done;
+loop_send(N)->
+		receive
+		after 500 -> X = random:uniform(3),
+								send(X,"f"), loop_send(N+1)
+		end.
+		
 
 init_uart_port(User_Pid) ->
 	  PID = self(),
 	  register(erl_port, PID),
-    ExtPrg = "/home/ISG/uart/init_UART4",
+    ExtPrg = "/ISG/uart/init_UART4",
     process_flag(trap_exit, true),
     Port = open_port({spawn, ExtPrg}, [{packet, 2}]),
     L = erlang:port_info(Port),

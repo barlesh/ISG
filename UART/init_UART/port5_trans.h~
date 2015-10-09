@@ -11,6 +11,7 @@
 typedef unsigned char byte;
 #define OK					1
 #define ERROR				-1
+//#define	UART_BOUD_RATE	9600
 #define	UART_BOUD_RATE	38400
 #define MODEM_PACKET_SIZE	66
 #define FILE_ERROR	-10
@@ -26,15 +27,13 @@ typedef unsigned char byte;
 mraa_uart_context uart;
 FILE* src;
 
+unsigned short createMsg(unsigned char *buffer, int payload , int header_size);
+void showMsg(char *buffer, unsigned short len);
+
 
 int init_modem();
-int is_incoming_modem();
-int get_modem_frame(unsigned char* uart_buffer);
 void sendToModem(unsigned char* buffer, int len);
-
-int send_to_erlang(unsigned char* uart_buffer, int len);
-int get_erlang_frame(unsigned char* erlang_buffer);
-
+void send_garbage(int len);
 
 void init_file(FILE* src);
 void writeToFile2(FILE* src ,char* str, int len);
