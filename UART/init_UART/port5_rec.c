@@ -14,19 +14,15 @@ void main(){
 	init_modem();
 	printf("starting receiver\n");
 	while(1){
-	//printf("!");
 		m_len = 0;
 		if( (m_len = get_modem_frame(buffer)) > 0){
 			if(m_len < 3 ) {
-				//printf("m_len size is:%d, data is ", m_len);
 				showMsg(buffer, m_len);
 				error_counter++;
 			}//if(m_len<3)
 			if(m_len>3){
-				//printf("m_len is:%d, msg is:", m_len);
 				showMsg(buffer, m_len);
-				printf("error till now:%ld\n", error_counter);
-				//printf("\n");
+				//printf("error till now:%ld\n", error_counter);
 			}//if(m_len>3)
 		
 		

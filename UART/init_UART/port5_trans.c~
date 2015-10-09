@@ -82,7 +82,9 @@ int init_modem(){
   writeToFile(src, "error seting mode\n");
 	}
 	mraa_uart_set_flowcontrol(uart, 0, 0);
-	writeToFile(src, "init modem\n");	
+	
+	writeToFile(src, "init modem\n");
+	return 1;	
 }
 
 int is_incoming_modem(){

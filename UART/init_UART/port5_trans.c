@@ -2,7 +2,7 @@
 
 void main(){
 	char buffer2[66];	
-	char buffer[]="massage number X";
+	char buffer[]="massage number X\n";
 	char buffer3[]={1,2,3,4,5,6,7,8,9,0,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47};
 
 	unsigned short i=48,j=0, m_len=0, flag=0, len=0, len2=0;
@@ -11,13 +11,7 @@ void main(){
 	init_file(src);
 	init_modem();
 	sleep(2);
-	
-	//send_garbage(5);
-	//len = createMsg(buffer,payload, header_size);
-	//showMsg(buffer, len);
-	
-	//or
-	
+
 	len = sizeof(buffer);
 	
 	while(1){
@@ -28,7 +22,6 @@ void main(){
 		printf("\n");
 		
 		sendToModem(buffer, len);
-		//mraa_uart_flush(uart);
 		i++;
 		if(i==58) i=48;
 	}//while(1)
@@ -53,7 +46,6 @@ unsigned short createMsg2(char *buffer, int payload , int header_size){
 	buffer[0] = 'a'; buffer[1] = 'b'; 
 	for(i=header_size; i<payload+header_size; i++)
 		buffer[i] = 'c';
-	//buffer[payload+header_size] = '\0';
 	return payload+header_size;
 
 }
@@ -82,7 +74,9 @@ int init_modem(){
   writeToFile(src, "error seting mode\n");
 	}
 	mraa_uart_set_flowcontrol(uart, 0, 0);
-	writeToFile(src, "init modem\n");	
+	
+	writeToFile(src, "init modem\n");
+	return 1;	
 }
 
 int is_incoming_modem(){
@@ -92,8 +86,6 @@ int is_incoming_modem(){
 	  		writeToFile(src, "error reading data from uart\n");
   			exit(UART_ERROR);
 	}	
-	/*else if(x>0)
-		printf("at is_incoming_modem X (m_len outside the function) is:%d\n", x);*/
 	return x;
 }
 
@@ -103,14 +95,8 @@ int get_modem_frame(unsigned char* uart_buffer){
 }
 
 void sendToModem(char* buffer, int len){
-	//char temp[5];
-	//char msg[50];
 	int ans=0;
-	//writeToFile(src, "sending via uart. msg:\n");
-	//writeToFile2(src, buffer,len);
 	ans = mraa_uart_write( uart , buffer, len);
-	//sprintf(msg, "\ntry to write to uart %d [byte].\twrote %d [byte]\n", len, ans);
-	//writeToFile(src, msg);
 	printf("try to write to uart %d [byte].\twrote %d [byte]\n", len, ans);
 }
 
