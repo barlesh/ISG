@@ -103,4 +103,10 @@ echo "src mraa-upm http://iotdk.intel.com/repos/1.1/intelgalactic" > /etc/opkg/m
 opkg update
 opkg install libmraa0
 
+מדריך דוגמה לשימוש בtermios לכתיבה וקריאה מחיבור סיריאלי
+http://tldp.org/HOWTO/Serial-Programming-HOWTO/x115.html
 
+
+שליחה סיריאלית לינוקס
+stty -F /dev/ttyUSB0 speed 38400 cs8 -echo
+echo -en '\x01\x00\x12\x11\xE5\x09\x06\x05\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x10' > /dev/ttyUSB0

@@ -13,20 +13,29 @@ void main(){
 	init_file(src);
 	init_modem();
 	printf("starting receiver\n");
+	
+	//Test Code
+	/*int j=0,jj=1;
+	for(j;j!=10,jj==1;j++){
+			if(j==80) printf("Fail");
+			if(jj=1) printf("Success");
+	
+	}
+	exit(0);*/
+	//End of Test code
+	
+	
 	while(1){
-	//printf("!");
 		m_len = 0;
 		if( (m_len = get_modem_frame(buffer)) > 0){
 			if(m_len < 3 ) {
-				//printf("m_len size is:%d, data is ", m_len);
 				showMsg(buffer, m_len);
 				error_counter++;
 			}//if(m_len<3)
 			if(m_len>3){
-				//printf("m_len is:%d, msg is:", m_len);
+				//printf("m_len is:%d\n", m_len);
 				showMsg(buffer, m_len);
-				printf("error till now:%ld\n", error_counter);
-				//printf("\n");
+				//printf("error till now:%ld\n", error_counter);
 			}//if(m_len>3)
 		
 		
@@ -52,14 +61,16 @@ void showMsg(char *buffer, unsigned short len){
 ////////////////////////////////////////	Modem related functions		//////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int init_modem(){
+	mraa_init();
 	 if( (uart = mraa_uart_init(0)) == NULL   ){
 	   		writeToFile(src, "error INITIATING UART\n");
   			exit(UART_ERROR);
 	 }
+	 /*set uart boud rate [bps]*/
 	 if ( mraa_uart_set_baudrate(uart, UART_BOUD_RATE)!=MRAA_SUCCESS) {
   		writeToFile(src, "error seting baudrate\n");
   		exit(UART_ERROR);
-  		}		//set uart boud rate [bps]
+  		}		
   if ( mraa_uart_set_mode(uart, 8,MRAA_UART_PARITY_NONE , 1)!=MRAA_SUCCESS) {
   writeToFile(src, "error seting mode\n");
 	}
@@ -82,7 +93,7 @@ int is_incoming_modem(){
 
 
 int get_modem_frame(unsigned char* uart_buffer){
-	return mraa_uart_read(uart, uart_buffer, 200);
+	return mraa_uart_read(uart, uart_buffer, 100);
 }
 
 void sendToModem(unsigned char* buffer, int len){
@@ -91,7 +102,7 @@ void sendToModem(unsigned char* buffer, int len){
 	int ans=0;
 	//writeToFile(src, "sending via uart. msg:\n");
 	//writeToFile2(src, buffer,len);
-	ans = mraa_uart_write( uart , buffer, len);
+	//ans = mraa_uart_write( uart , buffer, len);
 	//sprintf(msg, "\ntry to write to uart %d [byte].\twrote %d [byte]\n", len, ans);
 	//writeToFile(src, msg);
 	printf("try to write to uart %d [byte].\twrote %d [byte]\n", len, ans);

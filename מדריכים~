@@ -89,9 +89,20 @@ cd otp_src_R12B-5
 make
 sudo make install
 
+התקנת עורך טקסט nano
+wget http://www.nano-editor.org/dist/v2.2/nano-2.2.6.tar.gz 
+tar xvf nano-2.2.6.tar.gz 
+cd nano-2.2.6 
+./configure 
+make 
+make install
+
+ 
 התקנת ספריית mraa האחראית על שליטה בפינים של האדיסון:
 echo "src mraa-upm http://iotdk.intel.com/repos/1.1/intelgalactic" > /etc/opkg/mraa-upm.conf
 opkg update
 opkg install libmraa0
 
+מדריך דוגמה לשימוש בtermios לכתיבה וקריאה מחיבור סיריאלי
+http://tldp.org/HOWTO/Serial-Programming-HOWTO/x115.html
 

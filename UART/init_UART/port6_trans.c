@@ -1,33 +1,29 @@
-#include "port5_trans.h"
+#include "port6_trans.h"
 
 void main(){
+	int fd; 
 	char buffer2[66];	
 	char buffer3[]="massage number X\n";
-	char buffer[]={2,0,3,4,5,6,7,8,9,0,11,33,34,35,36,37,38,39,40,41,42,43,44,45,46};
-	//
-	unsigned short i=48,j=0, m_len=0, flag=0, len=0, X=0;
+	char buffer[]={1,0,0,0,0,6,7,8,9,0,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,10,10};
+
+	unsigned short i=48,j=0, m_len=0, flag=0, len=0, len2=0;
 	int payload = 64, header_size =2; 
-	printf("starting.....\n");
-	//init_file(src);
-	init_modem();
-	sleep(1);
-	//send_garbage(30);
-	//sleep(1);
+	printf("starting.....(termios)\n");
+	init_file(src);
+	fd = init_modem();
+
 	len = sizeof(buffer);
 	
 	while(1){
-		//delay(10); 
-		sleep(3);
+		sleep(5);
 		buffer[len - 3] = i;
 		printf("sending massage of length %d, msg is:", len);
 		showMsg(buffer, len);
 		printf("\n");
 		
-		sendToModem(buffer, len);
+		sendToModem(fd, buffer, len);
 		i++;
 		if(i==58) i=48;
-		//X = usleep(1000);
-		printf("pass usleep\n");
 	}//while(1)
 
 }//main
@@ -66,58 +62,54 @@ void showMsg(char *buffer, unsigned short len){
 ////////////////////////////////////////	Modem related functions		//////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int init_modem(){
- 		mraa_init();
-	 if( (uart = mraa_uart_init(0)) == NULL   ){
-	   		writeToFile(src, "error INITIATING UART\n");
-  			exit(UART_ERROR);
-	 }
-	 if ( mraa_uart_set_baudrate(uart, UART_BOUD_RATE)!=MRAA_SUCCESS) {
-  		writeToFile(src, "error seting baudrate\n");
-  		exit(UART_ERROR);
-  		}		//set uart boud rate [bps]
-  if ( mraa_uart_set_mode(uart, 8,MRAA_UART_PARITY_NONE , 1)!=MRAA_SUCCESS) {
-  writeToFile(src, "error seting mode\n");
-	}
-	mraa_uart_set_flowcontrol(uart, 0, 0);
-	
-	writeToFile(src, "init modem\n");
-	return 1;	
+	 int fd,c, res;
+        struct termios oldtio,newtio;
+        char buf[255];
+        
+        fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY ); 
+        if (fd <0) {perror(MODEMDEVICE); exit(-1); }
+        
+        tcgetattr(fd,&oldtio); /* save current port settings */
+        
+        bzero(&newtio, sizeof(newtio));
+        newtio.c_cflag = BAUDRATE  | CS8 | CLOCAL | CREAD;
+        newtio.c_iflag = IGNPAR;
+        newtio.c_oflag = 0;
+        
+        /* set input mode (non-canonical, no echo,...) */
+        newtio.c_lflag = 0;
+         
+        newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
+        newtio.c_cc[VMIN]     = 5;   /* blocking read until 5 chars received */
+        
+        tcflush(fd, TCIFLUSH);
+        tcsetattr(fd,TCSANOW,&newtio);
+        return fd;
 }
 
 int is_incoming_modem(){
 	char msg[40];
 	int x=0;
-	if ( (x = mraa_uart_data_available(uart,0) ) < 0   ) {
-	  		writeToFile(src, "error reading data from uart\n");
-  			exit(UART_ERROR);
-	}	
+	//if ( (x = mraa_uart_data_available(uart,0) ) < 0   ) {
+	  //		writeToFile(src, "error reading data from uart\n");
+  		//	exit(UART_ERROR);
+	//}	
 	return x;
 }
 
 
 int get_modem_frame(unsigned char* uart_buffer){
-	return mraa_uart_read(uart, uart_buffer, 200);
+	//return mraa_uart_read(uart, uart_buffer, 200);
 }
 
-void sendToModem(char* buffer, int len){
-	//int ans = 1, i=0;
-//	unsigned char s[1] = {10};
-	/*while(ans==1 && i < len){
-		printf("send byte #%d : %d\n", i, buffer[i]);
-		ans = mraa_uart_write( uart , &buffer[i], 1);
-		i++;
-	}*/
-	//ans = mraa_uart_write( uart , s, 1);
-	
-	
-	char buff[1]={10};
+void sendToModem(int fd, char* buffer, int len){
 	int ans=0;
-	ans = mraa_uart_write( uart , buffer, len);
+	ans = write(fd, buffer, len);
+	//ans = mraa_uart_write( uart , buffer, len);
 	printf("try to write to uart %d [byte].\twrote %d [byte]\n", len, ans);
-	//mraa_uart_write( uart, buff, 1);
 }
 
-void send_garbage(int len){
+/*void send_garbage(int len){
 	char buffer[len];
 	int i=0;
 	for(i;i<len; i++) 
@@ -125,7 +117,7 @@ void send_garbage(int len){
 	printf("sending %d bytes of garbage\n", len);
 	sendToModem(buffer,len);
 
-}
+}*/
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

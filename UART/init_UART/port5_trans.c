@@ -2,19 +2,21 @@
 
 void main(){
 	char buffer2[66];	
-	char buffer[]="massage number X\n";
-	char buffer3[]={1,2,3,4,5,6,7,8,9,0,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47};
-
-	unsigned short i=48,j=0, m_len=0, flag=0, len=0, len2=0;
+	char buffer3[]="massage number X\n";
+	char buffer[]={2,0,3,4,5,6,7,8,9,0,11,33,34,35,36,37,38,39,40,41,42,43,44,45,46};
+	//
+	unsigned short i=48,j=0, m_len=0, flag=0, len=0, X=0;
 	int payload = 64, header_size =2; 
 	printf("starting.....\n");
-	init_file(src);
+	//init_file(src);
 	init_modem();
-	sleep(2);
-
+	sleep(1);
+	//send_garbage(30);
+	//sleep(1);
 	len = sizeof(buffer);
 	
 	while(1){
+		//delay(10); 
 		sleep(3);
 		buffer[len - 3] = i;
 		printf("sending massage of length %d, msg is:", len);
@@ -24,6 +26,8 @@ void main(){
 		sendToModem(buffer, len);
 		i++;
 		if(i==58) i=48;
+		//X = usleep(1000);
+		printf("pass usleep\n");
 	}//while(1)
 
 }//main
@@ -62,6 +66,7 @@ void showMsg(char *buffer, unsigned short len){
 ////////////////////////////////////////	Modem related functions		//////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int init_modem(){
+ 	//mraa_init();
 	 if( (uart = mraa_uart_init(0)) == NULL   ){
 	   		writeToFile(src, "error INITIATING UART\n");
   			exit(UART_ERROR);
@@ -75,7 +80,7 @@ int init_modem(){
 	}
 	mraa_uart_set_flowcontrol(uart, 0, 0);
 	
-	writeToFile(src, "init modem\n");
+	//writeToFile(src, "init modem\n");
 	return 1;	
 }
 
@@ -95,9 +100,21 @@ int get_modem_frame(unsigned char* uart_buffer){
 }
 
 void sendToModem(char* buffer, int len){
+	//int ans = 1, i=0;
+//	unsigned char s[1] = {10};
+	/*while(ans==1 && i < len){
+		printf("send byte #%d : %d\n", i, buffer[i]);
+		ans = mraa_uart_write( uart , &buffer[i], 1);
+		i++;
+	}*/
+	//ans = mraa_uart_write( uart , s, 1);
+	
+	
+	char buff[1]={10};
 	int ans=0;
 	ans = mraa_uart_write( uart , buffer, len);
 	printf("try to write to uart %d [byte].\twrote %d [byte]\n", len, ans);
+	//mraa_uart_write( uart, buff, 1);
 }
 
 void send_garbage(int len){

@@ -1,39 +1,28 @@
-#include "port5_rec.h"
+#include "port6_rec.h"
 
 
 
 
 
 void main(){
+	int fd;
 	unsigned char buffer[100];
 	unsigned char temp_buffer[100];
 	char msg[100];
 	int m_len;
 	unsigned long error_counter=0;
 	init_file(src);
-	init_modem();
+	fd = init_modem();
 	printf("starting receiver\n");
-	
-	//Test Code
-	/*int j=0,jj=1;
-	for(j;j!=10,jj==1;j++){
-			if(j==80) printf("Fail");
-			if(jj=1) printf("Success");
-	
-	}
-	exit(0);*/
-	//End of Test code
-	
-	
 	while(1){
 		m_len = 0;
-		if( (m_len = get_modem_frame(buffer)) > 0){
+		if( is_incoming_modem(fd) > 0){
+			m_len = get_modem_frame(fd, buffer);
 			if(m_len < 3 ) {
 				showMsg(buffer, m_len);
 				error_counter++;
 			}//if(m_len<3)
 			if(m_len>3){
-				//printf("m_len is:%d\n", m_len);
 				showMsg(buffer, m_len);
 				//printf("error till now:%ld\n", error_counter);
 			}//if(m_len>3)
@@ -61,39 +50,48 @@ void showMsg(char *buffer, unsigned short len){
 ////////////////////////////////////////	Modem related functions		//////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int init_modem(){
-	mraa_init();
-	 if( (uart = mraa_uart_init(0)) == NULL   ){
-	   		writeToFile(src, "error INITIATING UART\n");
-  			exit(UART_ERROR);
-	 }
-	 /*set uart boud rate [bps]*/
-	 if ( mraa_uart_set_baudrate(uart, UART_BOUD_RATE)!=MRAA_SUCCESS) {
-  		writeToFile(src, "error seting baudrate\n");
-  		exit(UART_ERROR);
-  		}		
-  if ( mraa_uart_set_mode(uart, 8,MRAA_UART_PARITY_NONE , 1)!=MRAA_SUCCESS) {
-  writeToFile(src, "error seting mode\n");
-	}
-	mraa_uart_set_flowcontrol(uart, 0, 0);
-	writeToFile(src, "init modem\n");	
+	 int fd,c, res;
+        struct termios oldtio,newtio;
+        char buf[255];
+        
+        fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY ); 
+        if (fd <0) {perror(MODEMDEVICE); exit(-1); }
+        
+        tcgetattr(fd,&oldtio); /* save current port settings */
+        
+        bzero(&newtio, sizeof(newtio));
+        newtio.c_cflag = BAUDRATE  | CS8 | CLOCAL | CREAD;
+        newtio.c_iflag = IGNPAR;
+        newtio.c_oflag = 0;
+        
+        /* set input mode (non-canonical, no echo,...) */
+        newtio.c_lflag = 0;
+         
+        newtio.c_cc[VTIME]    = 1;   /* inter-character timer unused */
+        newtio.c_cc[VMIN]     = 66;   /* blocking read until 5 chars received */
+        
+        tcflush(fd, TCIFLUSH);
+        tcsetattr(fd,TCSANOW,&newtio);
+        return fd;
+}
+
+/*return 1 if data available at terminal, 0 else*/
+int is_incoming_modem(int fd){
+	fd_set readset;
+	struct timeval tv;
+	
+	FD_ZERO(&readset);
+  FD_SET(fd, &readset);
+  
+  // Initialize time out struct
+   tv.tv_sec = 0;
+   tv.tv_usec = 0;
+  return select(fd + 1, &readset, NULL, NULL, &tv);
 }
 
 
-int is_incoming_modem(){
-	char msg[40];
-	int x=0;
-	if ( (x = mraa_uart_data_available(uart,0) ) < 0   ) {
-	  		writeToFile(src, "error reading data from uart\n");
-  			exit(UART_ERROR);
-	}	
-	/*else if(x>0)
-		printf("at is_incoming_modem X (m_len outside the function) is:%d\n", x);*/
-	return x;
-}
-
-
-int get_modem_frame(unsigned char* uart_buffer){
-	return mraa_uart_read(uart, uart_buffer, 100);
+int get_modem_frame(int fd, unsigned char* buffer){
+	return read(fd, buffer, 66);
 }
 
 void sendToModem(unsigned char* buffer, int len){
@@ -102,7 +100,7 @@ void sendToModem(unsigned char* buffer, int len){
 	int ans=0;
 	//writeToFile(src, "sending via uart. msg:\n");
 	//writeToFile2(src, buffer,len);
-	//ans = mraa_uart_write( uart , buffer, len);
+	///ans = mraa_uart_write( uart , buffer, len);
 	//sprintf(msg, "\ntry to write to uart %d [byte].\twrote %d [byte]\n", len, ans);
 	//writeToFile(src, msg);
 	printf("try to write to uart %d [byte].\twrote %d [byte]\n", len, ans);
